@@ -1,59 +1,26 @@
-from matplotlib import pyplot as plt
-import numpy as np
+
 import cv2
-from typing import List
-import os
-import imutils
+import numpy as np
 
+def confidence(img, template):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+    res = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED)
+    conf = res.max()
+    return np.where(res == conf), conf
 
-def calculate_matches(des1: List[cv2.KeyPoint], des2: List[cv2.KeyPoint]):
-    """
-    does a matching algorithm to match if keypoints 1 and 2 are similar
-    @param des1: a numpy array of floats that are the descriptors of the keypoints
-    @param des2: a numpy array of floats that are the descriptors of the keypoints
-    @return:
-    """
-    # bf matcher with default params
-    bf = cv2.BFMatcher(cv2.NORM_L2)
-    matches = bf.knnMatch(des1, des2, k=2)
-    topResults = []
-    for m, n in matches:
-        if m.distance < 0.75 * n.distance:
-            topResults.append([m])
+files = ["./szukanie_olx/opencv_images/ex7.png", "./szukanie_olx/opencv_images/ex8.png", "./szukanie_olx/opencv_images/ex9.png", "./szukanie_olx/opencv_images/ex10.png", "./szukanie_olx/opencv_images/ex11.png", "./szukanie_olx/opencv_images/ex12.png", "./szukanie_olx/opencv_images/ex13.png", "./szukanie_olx/opencv_images/ex14.png", "./szukanie_olx/opencv_images/ex15.png"]
 
-    return topResults
+template = cv2.imread("./szukanie_olx/dane/sampley.png")
+h, w, _ = template.shape
 
-
-def compare_images_kaze():
-    cwd = os.getcwd()
-    target = os.path.join(cwd, './szukanie_olx/dane', 'sample.png')
-    images_list = os.listdir('./szukanie_olx/opencv_images')
-    for image in images_list:
-        # get my 2 images
-        img2 = cv2.imread(target)
-        img1 = cv2.imread(os.path.join(cwd, './szukanie_olx/opencv_images', image))
-        for i in range(0, 360, int(360 / 1)):
-            # rotate my image by i
-            img_target_rotation = imutils.rotate_bound(img2, i)
-
-            # Initiate KAZE object with default values
-            kaze = cv2.KAZE_create()
-            kp1, des1 = kaze.detectAndCompute(img1, None)
-            kp2, des2 = kaze.detectAndCompute(img2, None)
-            matches = calculate_matches(des1, des2)
-
-            try:
-                score = 100 * (len(matches) / min(len(kp1), len(kp2)))
-            except ZeroDivisionError:
-                score = 0
-            print(image, score)
-            img3 = cv2.drawMatchesKnn(img1, kp1, img_target_rotation, kp2, matches,
-                                      None, flags=2)
-            img3 = cv2.cvtColor(img3, cv2.COLOR_BGR2RGB)
-            plt.imshow(img3)
-            plt.show()
-            plt.clf()
-
-
-if __name__ == '__main__':
-    compare_images_kaze()
+for name in files:
+    img = cv2.imread(name)
+    ([y], [x]), conf = confidence(img, template)
+    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
+    text = name[-8:] + f' : {round(float(conf), 2)}'
+    # cv2.putText(img, text, (x, y), 1, cv2.FONT_HERSHEY_PLAIN, (0, 0, 0), 2)
+    # cv2.imshow(name, img)
+    print (text)
+# cv2.imshow('Template', template)
+# cv2.waitKey(0)
